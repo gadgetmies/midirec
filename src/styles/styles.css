@@ -173,3 +173,8 @@ h1 {
 h2 {
   color: #2800FF;
 }
+
+.midi-messages {
+  height: 500px;
+  overflow-y: scroll;
+}
