@@ -43,8 +43,11 @@ function onMIDISuccess(midiAccess) {
 }
 
 async function initialize() {
+  console.log('midi initialize')
   try {
+    console.log('requesting')
     const midi = await window.navigator.requestMIDIAccess({ sysex: true });
+    console.log('initialize done')
     return midi;
   } catch (e) {
     console.error("Failed to get MIDI access - ", e);
