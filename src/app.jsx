@@ -22,6 +22,9 @@ import Seo from './components/seo.jsx';
 
 // Home function that is reflected across the site
 export default function Home() {
+  const [midiMessages, setMidiMessages] = useState([])
+  const [currentPosition] = useState([0,0,0,0,0])
+  
   return (
     <Router>
       <Seo />
