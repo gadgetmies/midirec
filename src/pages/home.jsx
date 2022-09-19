@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { animated } from "react-spring";
 import { useWiggle } from "../hooks/wiggle";
 import { Link } from "wouter";
@@ -10,7 +10,7 @@ const strings = [
   "Salut React",
   "Hola React",
   "안녕 React",
-  "Hej React"
+  "Hej React",
 ];
 
 // Utility function to choose a random value from the language array
@@ -19,18 +19,18 @@ function randomLanguage() {
 }
 
 /**
-* The Home function defines the content that makes up the main content of the Home page
-*
-* This component is attached to the /about path in router.jsx
-* The function in app.jsx defines the page wrapper that this appears in along with the footer
-*/
+ * The Home function defines the content that makes up the main content of the Home page
+ *
+ * This component is attached to the /about path in router.jsx
+ * The function in app.jsx defines the page wrapper that this appears in along with the footer
+ */
 
 export default function Home() {
   /* We use state to set the hello string from the array https://reactjs.org/docs/hooks-state.html
      - We'll call setHello when the user clicks to change the string
   */
   const [hello, setHello] = React.useState(strings[0]);
-  
+
   /* The wiggle function defined in /hooks/wiggle.jsx returns the style effect and trigger function
      - We can attach this to events on elements in the page and apply the resulting style
   */
@@ -38,21 +38,20 @@ export default function Home() {
 
   // When the user clicks we change the header language
   const handleChangeHello = () => {
-    
     // Choose a new Hello from our languages
     const newHello = randomLanguage();
-    
+
     // Call the function to set the state string in our component
     setHello(newHello);
   };
-  
+
   const [midiMessages, setMidiMessages] = useState([]);
   const [currentPosition, setCurrentPosition] = useState([0, 0, 0, 0, 0]);
   const [devices, setDevices] = useState({ inputs: [], outputs: [] });
   const [selectedInput, setSelectedInput] = useState();
   const [selectedOutput, setSelectedOutput] = useState();
   const [inputListener, setInputListener] = useState();
-  
+
   useEffect(() => {
     function onMIDIMessage(event) {
       let str =
@@ -87,9 +86,17 @@ export default function Home() {
 
   const previousSelectedInput = useRef();
   useEffect(() => {
-    console.log(selectedInput)
-  }, [selectedInput])
-  
+    console.log(selectedInput);
+    previousSelectedInput.onmidimessage = undefined;
+    previousSelectedInput.current = selectedInput;
+
+    if (selectedInput) {
+      selectedInput.onmidimessage = (e) => {
+        setMidiMessages([...midiMessages, e]);
+      };
+    }
+  }, [selectedInput]);
+
   return (
     <>
       <h1 className="title">{hello}!</h1>
@@ -113,22 +120,43 @@ export default function Home() {
       <div className="instructions">
         <label>
           Input:
-          <select onChange={e => setSelectedInput(devices.inputs.find(({id}) => id = e.target.value))}>
+          <select
+            onChange={(e) =>
+              setSelectedInput(
+                devices.inputs.find(({ id }) => (id = e.target.value))
+              )
+            }
+          >
             <option></option>
             {devices.inputs.map((input) => (
               <option value={input.id}>{input.name}</option>
             ))}
           </select>
-        </label>,
+        </label>
+        ,
         <label>
           Output:
-          <select onChange={e => setSelectedOutput(devices.outputs.find(({id}) => id = e.target.value))}>
+          <select
+            onChange={(e) =>
+              setSelectedOutput(
+                devices.outputs.find(({ id }) => (id = e.target.value))
+              )
+            }
+          >
             <option></option>
             {devices.outputs.map((output) => (
               <option value={output.id}>{output.name}</option>
             ))}
           </select>
         </label>
+        <div>
+          {midiMessages.map(
+            (message) =>
+              `${event.timeStamp}: [${
+                event.data?.length
+              } bytes]: ${event.data?.map((d) => "0x " + d.toString(16))}`
+          ).join(<br/>)}
+        </div>
       </div>
     </>
   );
