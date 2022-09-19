@@ -76,8 +76,14 @@ export default function Home() {
       setDevices({ inputs: midi.getInputs(), outputs: midi.getOutputs() });
     })();
   }, []);
-  
-  const handleIncomingMessage = 
+
+  const handleIncomingMessage = (e) => {
+    console.log('type', typeof midiMessages, midiMessages instanceof Array)
+    const newMessages = midiMessages.slice()
+    newMessages.push(1)
+    console.log('newMessages', newMessages)
+    setMidiMessages(newMessages);
+  };
 
   const previousSelectedInput = useRef();
   useEffect(() => {
@@ -85,14 +91,8 @@ export default function Home() {
     previousSelectedInput.onmidimessage = undefined;
     previousSelectedInput.current = selectedInput;
 
-    const currentMidiMessages = midiMessages
-    console.log('midiMessages1', currentMidiMessages);
-
     if (selectedInput) {
-      selectedInput.onmidimessage = e => {
-        console.log('midiMessages', currentMidiMessages, e);
-        setMidiMessages([...currentMidiMessages, e]);
-      };
+      selectedInput.onmidimessage = handleIncomingMessage;
     }
   }, [selectedInput]);
 
@@ -128,7 +128,9 @@ export default function Home() {
           >
             <option></option>
             {devices.inputs.map((input) => (
-              <option key={input.id} value={input.id}>{input.name}</option>
+              <option key={input.id} value={input.id}>
+                {input.name}
+              </option>
             ))}
           </select>
         </label>
@@ -144,13 +146,15 @@ export default function Home() {
           >
             <option></option>
             {devices.outputs.map((output) => (
-              <option key={output.id} value={output.id}>{output.name}</option>
+              <option key={output.id} value={output.id}>
+                {output.name}
+              </option>
             ))}
           </select>
         </label>
         <pre>
           {midiMessages.map(
-            message =>
+            (message) =>
               `${message.timeStamp}: [${
                 message.data?.length
               } bytes]: ${message.data?.map((d) => "0x " + d.toString(16))}\n`
