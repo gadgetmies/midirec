@@ -51,6 +51,7 @@ export default function Home() {
   const [devices, setDevices] = useState({ inputs: [], outputs: [] });
   const [selectedInput, setSelectedInput] = useState();
   const [selectedOutput, setSelectedOutput] = useState();
+  const [inputListener, setInputListener] = useState();
   
   useEffect(() => {
     function onMIDIMessage(event) {
@@ -84,6 +85,10 @@ export default function Home() {
     })();
   }, []);
 
+  const previousSelectedInput = useRef();
+  useEffect(() => {
+    console.log(selectedInput)
+  }, [selectedInput])
   
   return (
     <>
