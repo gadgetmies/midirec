@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { Router, Link } from "wouter";
+import midi from "./midi";
 
 /**
-* This code defines the react app
-*
-* Imports the router functionality to provide page navigation
-* Defines the Home function outlining the content on each page
-* Content specific to each page (Home and About) is defined in their components in /pages
-* Each page content is presented inside the overall structure defined here
-* The router attaches the page components to their paths
-*/
+ * This code defines the react app
+ *
+ * Imports the router functionality to provide page navigation
+ * Defines the Home function outlining the content on each page
+ * Content specific to each page (Home and About) is defined in their components in /pages
+ * Each page content is presented inside the overall structure defined here
+ * The router attaches the page components to their paths
+ */
 
 // Import and apply CSS stylesheet
 import "./styles/styles.css";
@@ -18,13 +19,43 @@ import "./styles/styles.css";
 import PageRouter from "./components/router.jsx";
 
 // The component that adds our Meta tags to the page
-import Seo from './components/seo.jsx';
+import Seo from "./components/seo.jsx";
 
 // Home function that is reflected across the site
 export default function Home() {
-  const [midiMessages, setMidiMessages] = useState([])
-  const [currentPosition] = useState([0,0,0,0,0])
-  
+  const [midiMessages, setMidiMessages] = useState([]);
+  const [currentPosition, setCurrentPosition] = useState([0, 0, 0, 0, 0]);
+
+  useEffect(() => {
+    function onMIDIMessage(event) {
+      let str =
+        "MIDI message received at timestamp " +
+        event.timeStamp +
+        "[" +
+        event.data.length +
+        " bytes]: ";
+      const [ticks, ...rest] = currentPosition;
+      setCurrentPosition([ticks + 1, ...rest]);
+
+      for (let i = 0; i < event.data.length; i++) {
+        str += "0x" + event.data[i].toString(16) + " ";
+      }
+      console.log(str);
+    }
+
+    (async () => {
+      console.log('initialising')
+      const midiAccess = await midi.initialize();
+
+      midiAccess.inputs.forEach(function (entry) {
+        entry.onmidimessage = onMIDIMessage;
+      });
+      midiAccess.outputs.forEach(function (entry) {
+        entry.onmidimessage = onMIDIMessage;
+      });
+    })();
+  });
+
   return (
     <Router>
       <Seo />
@@ -46,7 +77,10 @@ export default function Home() {
           target="_top"
           href="https://glitch.com/edit/#!/remix/glitch-hello-react"
         >
-          <img src="https://cdn.glitch.com/605e2a51-d45f-4d87-a285-9410ad350515%2FLogo_Color.svg?v=1618199565140" alt="" />
+          <img
+            src="https://cdn.glitch.com/605e2a51-d45f-4d87-a285-9410ad350515%2FLogo_Color.svg?v=1618199565140"
+            alt=""
+          />
           Remix on Glitch
         </a>
       </footer>
