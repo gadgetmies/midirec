@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { Router, Link } from "wouter";
-import midi from "./midi";
 
 /**
  * This code defines the react app
@@ -21,44 +20,7 @@ import PageRouter from "./components/router.jsx";
 // The component that adds our Meta tags to the page
 import Seo from "./components/seo.jsx";
 
-// Home function that is reflected across the site
 export default function Home() {
-  const [midiMessages, setMidiMessages] = useState([]);
-  const [currentPosition, setCurrentPosition] = useState([0, 0, 0, 0, 0]);
-  const [devices, setDevices] = useState({ inputs: [], outputs: [] });
-
-  useEffect(() => {
-    function onMIDIMessage(event) {
-      let str =
-        "MIDI message received at timestamp " +
-        event.timeStamp +
-        "[" +
-        event.data.length +
-        " bytes]: ";
-      const [ticks, ...rest] = currentPosition;
-      setCurrentPosition([ticks + 1, ...rest]);
-
-      for (let i = 0; i < event.data.length; i++) {
-        str += "0x" + event.data[i].toString(16) + " ";
-      }
-      console.log(str);
-    }
-
-    (async () => {
-      console.log("initialising");
-      const midiAccess = await midi.initialize();
-
-      midiAccess.inputs.forEach(function (entry) {
-        entry.onmidimessage = onMIDIMessage;
-      });
-      midiAccess.outputs.forEach(function (entry) {
-        entry.onmidimessage = onMIDIMessage;
-      });
-
-      setDevices({ inputs: midi.getInputs(), outputs: midi.getOutputs() });
-    })();
-  }, []);
-
   return (
     <Router>
       <Seo />
@@ -70,14 +32,22 @@ export default function Home() {
       </main>
       {/* Footer links to Home and About, Link elements matched in router.jsx */}
       <footer className="footer">
-        <label>
-          Inputs:
-          <select>
-            {devices.inputs.map((input) => (
-              <option value={}>input.name</option>
-            ))}
-          </select>
-        </label>
+        <div className="links">
+          <Link href="/">Home</Link>
+          <span className="divider">|</span>
+          <Link href="/about">About</Link>
+        </div>
+        <a
+          className="btn--remix"
+          target="_top"
+          href="https://glitch.com/edit/#!/remix/glitch-hello-react"
+        >
+          <img
+            src="https://cdn.glitch.com/605e2a51-d45f-4d87-a285-9410ad350515%2FLogo_Color.svg?v=1618199565140"
+            alt=""
+          />
+          Remix on Glitch
+        </a>
       </footer>
     </Router>
   );

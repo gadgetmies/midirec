@@ -1,7 +1,8 @@
-import * as React from "react";
+import React, { useState, useEffect } from "react";
 import { animated } from "react-spring";
 import { useWiggle } from "../hooks/wiggle";
 import { Link } from "wouter";
+import midi from "../midi";
 
 // Our language strings for the header
 const strings = [
@@ -44,6 +45,46 @@ export default function Home() {
     // Call the function to set the state string in our component
     setHello(newHello);
   };
+  
+  const [midiMessages, setMidiMessages] = useState([]);
+  const [currentPosition, setCurrentPosition] = useState([0, 0, 0, 0, 0]);
+  const [devices, setDevices] = useState({ inputs: [], outputs: [] });
+  const [selectedInput, setSelectedInput] = useState();
+  const [selectedOutput, setSelectedOutput] = useState();
+  
+  useEffect(() => {
+    function onMIDIMessage(event) {
+      let str =
+        "MIDI message received at timestamp " +
+        event.timeStamp +
+        "[" +
+        event.data.length +
+        " bytes]: ";
+      const [ticks, ...rest] = currentPosition;
+      setCurrentPosition([ticks + 1, ...rest]);
+
+      for (let i = 0; i < event.data.length; i++) {
+        str += "0x" + event.data[i].toString(16) + " ";
+      }
+      console.log(str);
+    }
+
+    (async () => {
+      console.log("initialising");
+      const midiAccess = await midi.initialize();
+
+      midiAccess.inputs.forEach(function (entry) {
+        entry.onmidimessage = onMIDIMessage;
+      });
+      midiAccess.outputs.forEach(function (entry) {
+        entry.onmidimessage = onMIDIMessage;
+      });
+
+      setDevices({ inputs: midi.getInputs(), outputs: midi.getOutputs() });
+    })();
+  }, []);
+
+  
   return (
     <>
       <h1 className="title">{hello}!</h1>
@@ -65,13 +106,24 @@ export default function Home() {
         </animated.div>
       </div>
       <div className="instructions">
-        <h2>Using this project</h2>
-        <p>
-          This is the Glitch <strong>Hello React</strong> project. You can use
-          it to build your own app. See more info in the{" "}
-          <Link href="/about">About</Link> page, and check out README.md in the
-          editor for additional detail plus next steps you can take!
-        </p>
+        <label>
+          Input:
+          <select onChange={e => setSelectedInput(devices.inputs.find(({id}) => id = e.target.value))}>
+            <option></option>
+            {devices.inputs.map((input) => (
+              <option value={input.id}>{input.name}</option>
+            ))}
+          </select>
+        </label>,
+        <label>
+          Output:
+          <select onChange={e => setSelectedOutput(devices.outputs.find(({id}) => id = e.target.value))}>
+            <option></option>
+            {devices.outputs.map((output) => (
+              <option value={output.id}>{output.name}</option>
+            ))}
+          </select>
+        </label>
       </div>
     </>
   );

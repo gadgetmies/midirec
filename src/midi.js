@@ -1,3 +1,5 @@
+let midi = null; // global MIDIAccess object
+
 const getOutputs = () => {
   return Array.from(midi.outputs.values())
 }
@@ -6,13 +8,11 @@ const getInputs = () => {
   return Array.from(midi.inputs.values())
 }
 
-let midi = null; // global MIDIAccess object
-
 async function initialize() {
   console.log('midi initialize')
   try {
     console.log()
-    const midi = await window.navigator.requestMIDIAccess({ sysex: true });
+    midi = await window.navigator.requestMIDIAccess({ sysex: true });
     return midi;
   } catch (e) {
     console.error("Failed to get MIDI access - ", e);
@@ -21,4 +21,4 @@ async function initialize() {
 
 
 
-export default { initialize };
+export default { initialize, getInputs, getOutputs };
