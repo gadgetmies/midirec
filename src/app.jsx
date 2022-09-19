@@ -25,6 +25,7 @@ import Seo from "./components/seo.jsx";
 export default function Home() {
   const [midiMessages, setMidiMessages] = useState([]);
   const [currentPosition, setCurrentPosition] = useState([0, 0, 0, 0, 0]);
+  const [devices, setDevices] = useState({ inputs: [], outputs: [] });
 
   useEffect(() => {
     function onMIDIMessage(event) {
@@ -44,7 +45,7 @@ export default function Home() {
     }
 
     (async () => {
-      console.log('initialising')
+      console.log("initialising");
       const midiAccess = await midi.initialize();
 
       midiAccess.inputs.forEach(function (entry) {
@@ -53,8 +54,10 @@ export default function Home() {
       midiAccess.outputs.forEach(function (entry) {
         entry.onmidimessage = onMIDIMessage;
       });
+
+      setDevices({ inputs: midi.getInputs(), outputs: midi.getOutputs() });
     })();
-  });
+  }, []);
 
   return (
     <Router>
@@ -67,22 +70,14 @@ export default function Home() {
       </main>
       {/* Footer links to Home and About, Link elements matched in router.jsx */}
       <footer className="footer">
-        <div className="links">
-          <Link href="/">Home</Link>
-          <span className="divider">|</span>
-          <Link href="/about">About</Link>
-        </div>
-        <a
-          className="btn--remix"
-          target="_top"
-          href="https://glitch.com/edit/#!/remix/glitch-hello-react"
-        >
-          <img
-            src="https://cdn.glitch.com/605e2a51-d45f-4d87-a285-9410ad350515%2FLogo_Color.svg?v=1618199565140"
-            alt=""
-          />
-          Remix on Glitch
-        </a>
+        <label>
+          Inputs:
+          <select>
+            {devices.inputs.map((input) => (
+              <option value={}>input.name</option>
+            ))}
+          </select>
+        </label>
       </footer>
     </Router>
   );

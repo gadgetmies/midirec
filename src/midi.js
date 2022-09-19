@@ -1,57 +1,24 @@
-function listInputsAndOutputs(midiAccess) {
-  for (let entry of midiAccess.inputs) {
-    const input = entry[1];
-    console.log(
-      "Input port [type:'" +
-        input.type +
-        "'] id:'" +
-        input.id +
-        "' manufacturer:'" +
-        input.manufacturer +
-        "' name:'" +
-        input.name +
-        "' version:'" +
-        input.version +
-        "'"
-    );
-  }
+const getOutputs = () => {
+  return Array.from(midi.outputs.values())
+}
 
-  for (let entry of midiAccess.outputs) {
-    const output = entry[1];
-    console.log(
-      "Output port [type:'" +
-        output.type +
-        "'] id:'" +
-        output.id +
-        "' manufacturer:'" +
-        output.manufacturer +
-        "' name:'" +
-        output.name +
-        "' version:'" +
-        output.version +
-        "'"
-    );
-  }
+const getInputs = () => {
+  return Array.from(midi.inputs.values())
 }
 
 let midi = null; // global MIDIAccess object
 
-function onMIDISuccess(midiAccess) {
-  console.log("MIDI ready!");
-  listInputsAndOutputs(midiAccess);
-  return midiAccess; // store in the global (in real usage, would probably keep in an object instance)
-}
-
 async function initialize() {
   console.log('midi initialize')
   try {
-    console.log('requesting')
+    console.log()
     const midi = await window.navigator.requestMIDIAccess({ sysex: true });
-    console.log('initialize done')
     return midi;
   } catch (e) {
     console.error("Failed to get MIDI access - ", e);
   }
 }
+
+
 
 export default { initialize };
