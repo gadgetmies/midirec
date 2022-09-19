@@ -77,24 +77,21 @@ export default function Home() {
     })();
   }, []);
 
-  const handleIncomingMessage = (e) => {
-    console.log('type', typeof midiMessages, midiMessages instanceof Array)
-    const newMessages = midiMessages.slice()
-    newMessages.push(1)
-    console.log('newMessages', newMessages)
-    setMidiMessages(newMessages);
-  };
-
   const previousSelectedInput = useRef();
   useEffect(() => {
-    console.log(selectedInput);
-    previousSelectedInput.onmidimessage = undefined;
-    previousSelectedInput.current = selectedInput;
+    console.log("input selected");
+    if (previousSelectedInput.current !== selectedInput) {
+      previousSelectedInput.onmidimessage = undefined;
+      previousSelectedInput.current = selectedInput;
+    }
 
     if (selectedInput) {
-      selectedInput.onmidimessage = handleIncomingMessage;
+      selectedInput.onmidimessage = (e) => {
+        setMidiMessages([...midiMessages, e]);
+        console.log(e);
+      };
     }
-  }, [selectedInput]);
+  }, [selectedInput, midiMessages]);
 
   return (
     <>
@@ -153,11 +150,11 @@ export default function Home() {
           </select>
         </label>
         <pre>
-          {midiMessages.map(
+          {midiMessages?.map(
             (message) =>
               `${message.timeStamp}: [${
-                message.data?.length
-              } bytes]: ${message.data?.map((d) => "0x " + d.toString(16))}\n`
+                message.data.length
+              } bytes]: ${message.data.map((d) => "0x " + d.toString(16)).join(' ')}\n`
           )}
         </pre>
       </div>
