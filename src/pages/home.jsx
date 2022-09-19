@@ -73,13 +73,6 @@ export default function Home() {
       console.log("initialising");
       const midiAccess = await midi.initialize();
 
-      midiAccess.inputs.forEach(function (entry) {
-        entry.onmidimessage = onMIDIMessage;
-      });
-      midiAccess.outputs.forEach(function (entry) {
-        entry.onmidimessage = onMIDIMessage;
-      });
-
       setDevices({ inputs: midi.getInputs(), outputs: midi.getOutputs() });
     })();
   }, []);
@@ -91,7 +84,8 @@ export default function Home() {
     previousSelectedInput.current = selectedInput;
 
     if (selectedInput) {
-      selectedInput.onmidimessage = (e) => {
+      selectedInput.onmidimessage = e => {
+        console.log('midiMessages', midiMessages, e);
         setMidiMessages([...midiMessages, e]);
       };
     }
@@ -149,14 +143,14 @@ export default function Home() {
             ))}
           </select>
         </label>
-        <div>
+        <pre>
           {midiMessages.map(
-            (message) =>
-              `${event.timeStamp}: [${
-                event.data?.length
-              } bytes]: ${event.data?.map((d) => "0x " + d.toString(16))}`
-          ).join(<br/>)}
-        </div>
+            message =>
+              `${message.timeStamp}: [${
+                message.data?.length
+              } bytes]: ${message.data?.map((d) => "0x " + d.toString(16))}\n`
+          )}
+        </pre>
       </div>
     </>
   );
