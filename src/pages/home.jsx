@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, memo } from "react";
 import { Link } from "wouter";
 import midi from "../midi";
 
@@ -16,7 +16,7 @@ const initialiseDevices = async (setDevices) => {
   setDevices({ inputs: midi.getInputs(), outputs: midi.getOutputs() });
 };
 
-export default function Home() {
+export default memo(function Home() {
   const [midiMessages, setMidiMessages] = useState([]);
   const [currentPosition, setCurrentPosition] = useState([0, 0, 0, 0, 0]);
   const [devices, setDevices] = useState({ inputs: [], outputs: [] });
@@ -59,19 +59,19 @@ export default function Home() {
     [midiMessages, currentPosition]
   );
 
-  const previousSelectedInput = useRef();
+  //const previousSelectedInput = useRef();
   useEffect(() => {
-    if (previousSelectedInput.current !== selectedInput) {
+    /*if (previousSelectedInput.current !== selectedInput) {
       delete previousSelectedInput.onmidimessage;
       previousSelectedInput.current = selectedInput;
       console.log("trying to clear handler");
-
+*/
       if (selectedInput) {
         console.log("connecting");
         selectedInput.onmidimessage = onMidiMessage;
       }
-    }
-  }, [selectedInput, previousSelectedInput, onMidiMessage]);
+  //  }
+  }, [selectedInput, onMidiMessage]);
 
   return (
     <>
@@ -142,4 +142,4 @@ export default function Home() {
       </div>
     </>
   );
-}
+})
