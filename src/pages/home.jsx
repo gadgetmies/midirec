@@ -17,62 +17,48 @@ const initialiseDevices = async (setDevices) => {
 };
 
 export default memo(function Home() {
-  const [midiMessages, _setMidiMessages] = useState([]);
-  const [currentPosition, _setCurrentPosition] = useState([0, 0, 0, 0, 0]);
+  const [midiMessages, setMidiMessages] = useState([]);
+  const [currentPosition, setCurrentPosition] = useState([0, 0, 0, 0, 0]);
   const [devices, setDevices] = useState({ inputs: [], outputs: [] });
   const [selectedInput, setSelectedInput] = useState(null);
   const [selectedOutput, setSelectedOutput] = useState();
   const [inputListener, setInputListener] = useState();
   const [recordClock, setRecordClock] = useState(false);
 
-  const midiMessagesRef = useRef(midiMessages);
-  const setMidiMessages = (messages) => {
-    midiMessagesRef.current = messages;
-    _setMidiMessages(messages);
-  };
-
-  const currentPositionRef = useRef(currentPosition);
-  const setCurrentPosition = (position) => {
-    currentPositionRef.current = position;
-    _setCurrentPosition(position);
-  };
-
   useEffect(() => {
     initialiseDevices(setDevices);
   }, []);
 
-  const onMidiMessage = (message) => {
-    const statusByte = message.data[0];
-    if (statusByte === 0xf8) {
-      console.log(currentPosition);
-      let [position, phrase, bar, beat, tick] = currentPosition;
-      const tickOverflow = tick === 23 ? 1 : 0;
-      tick = (tick + 1) % 24;
-      const beatOverflow = beat === 3 && tickOverflow ? 1 : 0;
-      beat = (beat + tickOverflow) % 4;
-      const barOverflow = bar === 3 && beatOverflow ? 1 : 0;
-      bar = (bar + beatOverflow) % 4;
-      phrase += barOverflow;
-      setCurrentPosition([position + 1, phrase, bar, beat, tick]);
-      if (!recordClock) return;
-    } else if (statusByte === 0xfb) {
-      setCurrentPosition([0, 0, 0, 0, 0]);
-      if (!recordClock) return;
-    }
-
-    if (recordClock || (statusByte < 0xf8 && statusByte > 0xfc))
-      setMidiMessages([
-        { data: message, text: messageToText(message) },
-        ...midiMessages,
-      ]);
-  };
-
   useEffect(() => {
     if (selectedInput) {
-      selectedInput.onmidimessage = onMidiMessage;
+      selectedInput.onmidimessage = (message) => {
+        const statusByte = message.data[0];
+        if (statusByte === 0xf8) {
+          console.log(currentPosition);
+          let [position, phrase, bar, beat, tick] = currentPosition;
+          const tickOverflow = tick === 23 ? 1 : 0;
+          tick = (tick + 1) % 24;
+          const beatOverflow = beat === 3 && tickOverflow ? 1 : 0;
+          beat = (beat + tickOverflow) % 4;
+          const barOverflow = bar === 3 && beatOverflow ? 1 : 0;
+          bar = (bar + beatOverflow) % 4;
+          phrase += barOverflow;
+          setCurrentPosition([position + 1, phrase, bar, beat, tick]);
+          if (!recordClock) return;
+        } else if (statusByte === 0xfc) {
+          setCurrentPosition([0, 0, 0, 0, 0]);
+          if (!recordClock) return;
+        }
+
+        if (recordClock || (statusByte < 0xf8 && statusByte > 0xfc))
+          setMidiMessages([
+            { data: message, text: messageToText(message) },
+            ...midiMessages,
+          ]);
+      };
     }
     return () => selectedInput && (selectedInput.onmidimessage = null);
-  }, [selectedInput]);
+  }, [selectedInput, midiMessages, currentPosition]);
 
   return (
     <>
@@ -140,6 +126,9 @@ export default memo(function Home() {
         <pre className="midi-messages">
           {midiMessages.slice(0, 20).map(({ text }) => text)}
         </pre>
+      </div>
+      <div>
+        
       </div>
     </>
   );
