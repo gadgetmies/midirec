@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Link } from "wouter";
 import midi from "../midi";
 
@@ -29,32 +29,35 @@ export default function Home() {
     initialiseDevices(setDevices);
   }, []);
 
-  const onMidiMessage = (message) => {
-    const statusByte = message.data[0];
-    console.log("message", statusByte === 0xf8);
-    if (statusByte === 0xf8) {
-      console.log(currentPosition);
-      let [position, phrase, bar, beat, tick] = currentPosition;
-      const tickOverflow = tick === 23 ? 1 : 0;
-      tick = (tick + 1) % 24;
-      const beatOverflow = beat === 3 && tickOverflow ? 1 : 0;
-      beat = (beat + tickOverflow) % 4;
-      const barOverflow = bar === 3 && beatOverflow ? 1 : 0;
-      bar = (bar + beatOverflow) % 4;
-      phrase += barOverflow;
-      setCurrentPosition([position + 1, phrase, bar, beat, tick]);
-      if (!recordClock) return;
-    } else if (statusByte === 0xfa) {
-      setCurrentPosition([0, 0, 0, 0, 0]);
-      if (!recordClock) return;
-    }
+  const onMidiMessage = useCallback(
+    (message) => {
+      const statusByte = message.data[0];
+      console.log("message", statusByte === 0xf8);
+      if (statusByte === 0xf8) {
+        console.log(currentPosition);
+        let [position, phrase, bar, beat, tick] = currentPosition;
+        const tickOverflow = tick === 23 ? 1 : 0;
+        tick = (tick + 1) % 24;
+        const beatOverflow = beat === 3 && tickOverflow ? 1 : 0;
+        beat = (beat + tickOverflow) % 4;
+        const barOverflow = bar === 3 && beatOverflow ? 1 : 0;
+        bar = (bar + beatOverflow) % 4;
+        phrase += barOverflow;
+        setCurrentPosition([position + 1, phrase, bar, beat, tick]);
+        if (!recordClock) return;
+      } else if (statusByte === 0xfa) {
+        setCurrentPosition([0, 0, 0, 0, 0]);
+        if (!recordClock) return;
+      }
 
-    if (recordClock || (statusByte < 0xf8 && statusByte > 0xfc))
-      setMidiMessages([
-        { data: message, text: messageToText(message) },
-        ...midiMessages,
-      ]);
-  };
+      if (recordClock || (statusByte < 0xf8 && statusByte > 0xfc))
+        setMidiMessages([
+          { data: message, text: messageToText(message) },
+          ...midiMessages,
+        ]);
+    },
+    [midiMessages, currentPosition]
+  );
 
   const previousSelectedInput = useRef();
   useEffect(() => {
@@ -65,10 +68,10 @@ export default function Home() {
 
       if (selectedInput) {
         console.log("connecting");
-        selectedInput.onmidimessage = onMidiMessage
+        selectedInput.onmidimessage = onMidiMessage;
       }
     }
-  }, [selectedInput, previousSelectedInput]);
+  }, [selectedInput, previousSelectedInput, onMidiMessage]);
 
   return (
     <>
