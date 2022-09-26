@@ -51,7 +51,11 @@ export default function Home() {
 
     if (recordClock || statusByte < 0xf8 || statusByte > 0xfc)
       setMidiMessages([
-        { data: message, text: messageToText(message) },
+        {
+          data: message,
+          text: messageToText(message),
+          position: currentPosition.slice(1).join("."),
+        },
         ...midiMessages,
       ]);
   };
@@ -59,16 +63,15 @@ export default function Home() {
   const generateCSV = () => {
     const csv = midiMessages
       .reduce(
-        ({ columns, rows }, { data }) => {
-          let column = columns.findIndex(c => c === data[0]);
+        ({ columns, rows }, { data, position }) => {
+          let column = columns.findIndex((c) => c === data.data[1]);
           if (column === -1) {
             column = columns.length;
-            columns.push(data[0]);
+            columns.push(data.data[1]);
           }
-          console.log({columns})
           return {
             columns: columns,
-            rows: [...rows, ",".repeat(column) + data.toString],
+            rows: [...rows, position + ",".repeat(column+1) + data.data[2]],
           };
         },
         { columns: [], rows: [] }
@@ -154,7 +157,7 @@ export default function Home() {
       </div>
       <div>
         <button onClick={generateCSV}>Generate CSV</button>
-        <pre></pre>
+        <pre>{csv}</pre>
       </div>
     </>
   );
