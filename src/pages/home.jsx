@@ -23,22 +23,9 @@ export default function Home() {
   const [selectedInput, setSelectedInput] = useState();
   const [selectedOutput, setSelectedOutput] = useState();
   const [inputListener, setInputListener] = useState();
+  const [storeClock, setStoreClock] = useState(true);
 
   useEffect(() => {
-    function onMIDIMessage(event) {
-      let str =
-        "MIDI message received at timestamp " +
-        event.timeStamp +
-        "[" +
-        event.data.length +
-        " bytes]: ";
-
-      for (let i = 0; i < event.data.length; i++) {
-        str += "0x" + event.data[i].toString(16) + " ";
-      }
-      console.log(str);
-    }
-
     initialiseDevices(setDevices);
   }, []);
 
@@ -50,20 +37,23 @@ export default function Home() {
     }
     if (selectedInput) {
       selectedInput.onmidimessage = (e) => {
-        setMidiMessages([{ data: e, text: messageToText(e) }, ...midiMessages]);
         if (event.data[0] === 0xf8) {
           let [position, phrase, bar, beat, tick] = currentPosition;
-          const tickOverflow = tick === 11 ? 1 : 0;
-          tick = (tick + 1) % 12;
+          const tickOverflow = tick === 23 ? 1 : 0;
+          tick = (tick + 1) % 24;
           const beatOverflow = beat === 3 && tickOverflow ? 1 : 0;
           beat = (beat + tickOverflow) % 4;
           const barOverflow = bar === 3 && beatOverflow ? 1 : 0;
           bar = (bar + beatOverflow) % 4;
           phrase += barOverflow;
           setCurrentPosition([position + 1, phrase, bar, beat, tick]);
+          if (!storeClock) return;
         } else if (event.data[0] === 0xfc) {
           setCurrentPosition([0, 0, 0, 0, 0]);
+          if (!storeClock) return;
         }
+
+        setMidiMessages([{ data: e, text: messageToText(e) }, ...midiMessages]);
       };
     }
   }, [selectedInput, midiMessages]);
@@ -120,11 +110,18 @@ export default function Home() {
         </button>
       </div>
       <div>
-        Position: {currentPosition[1]+1}.{currentPosition[2]+1}.{currentPosition[3]+1}
-        .{currentPosition[4]} ({currentPosition[0]})
+        Position: {currentPosition[1] + 1}.{currentPosition[2] + 1}.
+        {currentPosition[3] + 1}.{currentPosition[4]} ({currentPosition[0]})
       </div>
       <div>
-        <label><input type="checkbox"></input></label>
+        <label>
+          <input
+            type="checkbox"
+            onChange={(e) => setStoreClock(!storeClock)}
+            checked={storeClock}
+          />
+          Record clock
+        </label>
       </div>
       <div>
         <button onClick={() => setMidiMessages([])}>Clear messages</button>
