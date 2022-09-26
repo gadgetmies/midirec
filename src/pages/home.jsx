@@ -10,6 +10,13 @@ export default function Home() {
   const [selectedOutput, setSelectedOutput] = useState();
   const [inputListener, setInputListener] = useState();
 
+  const initialiseDevices = async () => {
+    console.log("initialising");
+    const midiAccess = await midi.initialize();
+
+    setDevices({ inputs: midi.getInputs(), outputs: midi.getOutputs() });
+  }
+  
   useEffect(() => {
     function onMIDIMessage(event) {
       let str =
@@ -18,8 +25,12 @@ export default function Home() {
         "[" +
         event.data.length +
         " bytes]: ";
-      const [ticks, ...rest] = currentPosition;
-      setCurrentPosition([ticks + 1, ...rest]);
+      if (event.data[0] === 0xf8) {
+        const [ticks, ...rest] = currentPosition;
+        setCurrentPosition([ticks + 1, ...rest]);
+      } else if (event.data[0] === 0x56) {
+        setCurrentPosition([0,0,0,0,0])
+      }
 
       for (let i = 0; i < event.data.length; i++) {
         str += "0x" + event.data[i].toString(16) + " ";
@@ -27,12 +38,7 @@ export default function Home() {
       console.log(str);
     }
 
-    (async () => {
-      console.log("initialising");
-      const midiAccess = await midi.initialize();
-
-      setDevices({ inputs: midi.getInputs(), outputs: midi.getOutputs() });
-    })();
+    initialiseDevices();
   }, []);
 
   const previousSelectedInput = useRef();
@@ -46,7 +52,6 @@ export default function Home() {
     if (selectedInput) {
       selectedInput.onmidimessage = (e) => {
         setMidiMessages([...midiMessages, e]);
-        console.log(e);
       };
     }
   }, [selectedInput, midiMessages]);
@@ -59,13 +64,14 @@ export default function Home() {
         <label>
           Input:
           <select
+            disabled={devices.inputs.length === 0}
             onChange={(e) =>
               setSelectedInput(
                 devices.inputs.find(({ id }) => (id = e.target.value))
               )
             }
           >
-            <option>No devices available</option>
+            <option disabled selected={selectedInput === undefined}>No device selected</option>
             {devices.inputs.map((input) => (
               <option key={input.id} value={input.id}>
                 {input.name}
@@ -76,13 +82,14 @@ export default function Home() {
         <label>
           Output:
           <select
+            disabled={devices.outputs.length === 0}
             onChange={(e) =>
               setSelectedOutput(
                 devices.outputs.find(({ id }) => (id = e.target.value))
               )
             }
           >
-            <option>No devices available</option>
+            <option disabled selected={selectedOutput === undefined}>No device selected</option>
             {devices.outputs.map((output) => (
               <option key={output.id} value={output.id}>
                 {output.name}
@@ -90,13 +97,15 @@ export default function Home() {
             ))}
           </select>
         </label>
+        <br/>
+        <button onClick={() => initialiseDevices()}>Refresh devices</button>
       </div>
       <div>
         Position: {currentPosition[1]}.{currentPosition[2]}.{currentPosition[3]}.{currentPosition[4]} ({currentPosition[0]})
       </div>
       <div>
         <pre className='midi-messages'>
-          {midiMessages?.map(
+          {midiMessages.map(
             (message) => {
               return `${message.timeStamp}: [${
                 message.data.length
