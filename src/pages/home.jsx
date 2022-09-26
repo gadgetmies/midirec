@@ -1,22 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
-import { animated } from "react-spring";
-import { useWiggle } from "../hooks/wiggle";
 import { Link } from "wouter";
 import midi from "../midi";
 
-/**
- * The Home function defines the content that makes up the main content of the Home page
- *
- * This component is attached to the /about path in router.jsx
- * The function in app.jsx defines the page wrapper that this appears in along with the footer
- */
-
 export default function Home() {
-  /* The wiggle function defined in /hooks/wiggle.jsx returns the style effect and trigger function
-     - We can attach this to events on elements in the page and apply the resulting style
-  */
-  const [style, trigger] = useWiggle({ x: 5, y: 5, scale: 1 });
-
   const [midiMessages, setMidiMessages] = useState([]);
   const [currentPosition, setCurrentPosition] = useState([0, 0, 0, 0, 0]);
   const [devices, setDevices] = useState({ inputs: [], outputs: [] });
@@ -79,15 +65,14 @@ export default function Home() {
               )
             }
           >
-            <option></option>
+            <option>No devices available</option>
             {devices.inputs.map((input) => (
               <option key={input.id} value={input.id}>
                 {input.name}
               </option>
             ))}
           </select>
-        </label>
-        ,
+        </label><br/>
         <label>
           Output:
           <select
@@ -97,7 +82,7 @@ export default function Home() {
               )
             }
           >
-            <option></option>
+            <option>No devices available</option>
             {devices.outputs.map((output) => (
               <option key={output.id} value={output.id}>
                 {output.name}
@@ -105,6 +90,11 @@ export default function Home() {
             ))}
           </select>
         </label>
+      </div>
+      <div>
+        Position: {currentPosition[1]}.{currentPosition[2]}.{currentPosition[3]}.{currentPosition[4]} ({currentPosition[0]})
+      </div>
+      <div>
         <pre className='midi-messages'>
           {midiMessages?.map(
             (message) => {
