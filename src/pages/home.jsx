@@ -17,60 +17,75 @@ const initialiseDevices = async (setDevices) => {
 };
 
 export default memo(function Home() {
-  const [midiMessages, setMidiMessages] = useState([]);
-  const [currentPosition, setCurrentPosition] = useState([0, 0, 0, 0, 0]);
+  const [midiMessages, _setMidiMessages] = useState([]);
+  const [currentPosition, _setCurrentPosition] = useState([0, 0, 0, 0, 0]);
   const [devices, setDevices] = useState({ inputs: [], outputs: [] });
   const [selectedInput, setSelectedInput] = useState();
   const [selectedOutput, setSelectedOutput] = useState();
   const [inputListener, setInputListener] = useState();
   const [recordClock, setRecordClock] = useState(false);
 
+  const midiMessagesRef = useRef(midiMessages);
+  const setMidiMessages = (messages) => {
+    midiMessagesRef.current = messages;
+    _setMidiMessages(messages);
+  };
+
+  const currentPositionRef = useRef(currentPosition);
+  const setCurrentPosition = (position) => {
+    currentPositionRef.current = position;
+    _setCurrentPosition(position);
+  };
+
   useEffect(() => {
     initialiseDevices(setDevices);
   }, []);
 
-  const onMidiMessage = useCallback(
-    (message) => {
-      const statusByte = message.data[0];
-      console.log("message", statusByte === 0xf8);
-      if (statusByte === 0xf8) {
-        console.log(currentPosition);
-        let [position, phrase, bar, beat, tick] = currentPosition;
-        const tickOverflow = tick === 23 ? 1 : 0;
-        tick = (tick + 1) % 24;
-        const beatOverflow = beat === 3 && tickOverflow ? 1 : 0;
-        beat = (beat + tickOverflow) % 4;
-        const barOverflow = bar === 3 && beatOverflow ? 1 : 0;
-        bar = (bar + beatOverflow) % 4;
-        phrase += barOverflow;
-        setCurrentPosition([position + 1, phrase, bar, beat, tick]);
-        if (!recordClock) return;
-      } else if (statusByte === 0xfa) {
-        setCurrentPosition([0, 0, 0, 0, 0]);
-        if (!recordClock) return;
-      }
+  const onMidiMessage = (message) => {
+    const statusByte = message.data[0];
+    console.log("message", statusByte === 0xf8);
+    if (statusByte === 0xf8) {
+      console.log(currentPosition);
+      let [position, phrase, bar, beat, tick] = currentPosition;
+      const tickOverflow = tick === 23 ? 1 : 0;
+      tick = (tick + 1) % 24;
+      const beatOverflow = beat === 3 && tickOverflow ? 1 : 0;
+      beat = (beat + tickOverflow) % 4;
+      const barOverflow = bar === 3 && beatOverflow ? 1 : 0;
+      bar = (bar + beatOverflow) % 4;
+      phrase += barOverflow;
+      setCurrentPosition([position + 1, phrase, bar, beat, tick]);
+      if (!recordClock) return;
+    } else if (statusByte === 0xfa) {
+      setCurrentPosition([0, 0, 0, 0, 0]);
+      if (!recordClock) return;
+    }
 
-      if (recordClock || (statusByte < 0xf8 && statusByte > 0xfc))
-        setMidiMessages([
-          { data: message, text: messageToText(message) },
-          ...midiMessages,
-        ]);
-    },
-    [midiMessages, currentPosition]
-  );
+    if (recordClock || (statusByte < 0xf8 && statusByte > 0xfc))
+      setMidiMessages([
+        { data: message, text: messageToText(message) },
+        ...midiMessages,
+      ]);
+  };
 
-  //const previousSelectedInput = useRef();
+  const previousSelectedInput = useRef();
+  const selectedInputRef = useRef(selectedInput);
+  const setSelectedInput = (input) => {
+    selectedInputRef.current = input;
+    _setSelectedInput(input);
+  };
   useEffect(() => {
-    /*if (previousSelectedInput.current !== selectedInput) {
+    console.log("use");
+    if (previousSelectedInput.current !== selectedInput) {
       delete previousSelectedInput.onmidimessage;
       previousSelectedInput.current = selectedInput;
       console.log("trying to clear handler");
-*/
+
       if (selectedInput) {
         console.log("connecting");
         selectedInput.onmidimessage = onMidiMessage;
       }
-  //  }
+    }
   }, [selectedInput, onMidiMessage]);
 
   return (
@@ -82,11 +97,12 @@ export default memo(function Home() {
           Input:
           <select
             disabled={devices.inputs.length === 0}
-            onChange={(e) =>
+            onChange={(e) => {
+              console.log("e");
               setSelectedInput(
                 devices.inputs.find(({ id }) => (id = e.target.value))
-              )
-            }
+              );
+            }}
           >
             <option>No device selected</option>
             {devices.inputs.map((input) => (
@@ -101,11 +117,12 @@ export default memo(function Home() {
           Output:
           <select
             disabled={devices.outputs.length === 0}
-            onChange={(e) =>
+            onChange={(e) => {
+              console.log("e");
               setSelectedOutput(
                 devices.outputs.find(({ id }) => (id = e.target.value))
-              )
-            }
+              );
+            }}
           >
             <option disabled>No device selected</option>
             {devices.outputs.map((output) => (
@@ -142,4 +159,4 @@ export default memo(function Home() {
       </div>
     </>
   );
-})
+});
