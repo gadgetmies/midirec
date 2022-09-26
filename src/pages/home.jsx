@@ -23,7 +23,7 @@ export default function Home() {
   const [selectedInput, setSelectedInput] = useState();
   const [selectedOutput, setSelectedOutput] = useState();
   const [inputListener, setInputListener] = useState();
-  const [storeClock, setStoreClock] = useState(true);
+  const [recordClock, setRecordClock] = useState(false);
 
   useEffect(() => {
     initialiseDevices(setDevices);
@@ -34,10 +34,12 @@ export default function Home() {
     if (previousSelectedInput.current !== selectedInput) {
       delete previousSelectedInput.onmidimessage;
       previousSelectedInput.current = selectedInput;
+      console.log('trying to clear handler')
     }
     if (selectedInput) {
       selectedInput.onmidimessage = (e) => {
-        if (event.data[0] === 0xf8) {
+        const statusByte = e.data[0]
+        if (statusByte === 0xf8) {
           let [position, phrase, bar, beat, tick] = currentPosition;
           const tickOverflow = tick === 23 ? 1 : 0;
           tick = (tick + 1) % 24;
@@ -47,16 +49,17 @@ export default function Home() {
           bar = (bar + beatOverflow) % 4;
           phrase += barOverflow;
           setCurrentPosition([position + 1, phrase, bar, beat, tick]);
-          if (!storeClock) return;
-        } else if (event.data[0] === 0xfc) {
+          if (!recordClock) return;
+        } else if (statusByte === 0xfa) {
           setCurrentPosition([0, 0, 0, 0, 0]);
-          if (!storeClock) return;
+          if (!recordClock) return;
         }
 
+        if (recordClock || statusByte < 0xf8 && statusByte > 0xfc)
         setMidiMessages([{ data: e, text: messageToText(e) }, ...midiMessages]);
       };
     }
-  }, [selectedInput, midiMessages]);
+  }, [selectedInput, midiMessages, currentPosition]);
 
   return (
     <>
@@ -73,7 +76,7 @@ export default function Home() {
               )
             }
           >
-            <option disabled selected={selectedInput === undefined}>
+            <option selected={selectedInput === undefined}>
               No device selected
             </option>
             {devices.inputs.map((input) => (
@@ -117,8 +120,8 @@ export default function Home() {
         <label>
           <input
             type="checkbox"
-            onChange={(e) => setStoreClock(!storeClock)}
-            checked={storeClock}
+            onChange={(e) => setRecordClock(!recordClock)}
+            checked={recordClock}
           />
           Record clock
         </label>
