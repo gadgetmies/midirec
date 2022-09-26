@@ -16,7 +16,7 @@ const initialiseDevices = async (setDevices) => {
   setDevices({ inputs: midi.getInputs(), outputs: midi.getOutputs() });
 };
 
-export default memo(function Home() {
+export default function Home() {
   const [midiMessages, setMidiMessages] = useState([]);
   const [currentPosition, setCurrentPosition] = useState([0, 0, 0, 0, 0]);
   const [devices, setDevices] = useState({ inputs: [], outputs: [] });
@@ -24,38 +24,49 @@ export default memo(function Home() {
   const [selectedOutput, setSelectedOutput] = useState();
   const [inputListener, setInputListener] = useState();
   const [recordClock, setRecordClock] = useState(false);
+  const [csv, setCsv] = useState("");
 
   useEffect(() => {
     initialiseDevices(setDevices);
   }, []);
 
+  const onMidiMessage = (message) => {
+    const statusByte = message.data[0];
+    console.log(statusByte);
+    if (statusByte === 0xf8) {
+      let [position, phrase, bar, beat, tick] = currentPosition;
+      const tickOverflow = tick === 23 ? 1 : 0;
+      tick = (tick + 1) % 24;
+      const beatOverflow = beat === 3 && tickOverflow ? 1 : 0;
+      beat = (beat + tickOverflow) % 4;
+      const barOverflow = bar === 3 && beatOverflow ? 1 : 0;
+      bar = (bar + beatOverflow) % 4;
+      phrase += barOverflow;
+      setCurrentPosition([position + 1, phrase, bar, beat, tick]);
+      if (!recordClock) return;
+    } else if (statusByte === 0xfc) {
+      setCurrentPosition([0, 0, 0, 0, 0]);
+      if (!recordClock) return;
+    }
+
+    if (recordClock || statusByte < 0xf8 || statusByte > 0xfc)
+      setMidiMessages([
+        { data: message, text: messageToText(message) },
+        ...midiMessages,
+      ]);
+  };
+
+  const generateCSV = () => {
+    console.log(midiMessages);
+    const csv = midiMessages
+      .reduce((acc, { data }) => {[...acc, data.toString]}, {inputs: [], messages: []})
+      .join("\n");
+    setCsv(csv);
+  };
+
   useEffect(() => {
     if (selectedInput) {
-      selectedInput.onmidimessage = (message) => {
-        const statusByte = message.data[0];
-        if (statusByte === 0xf8) {
-          console.log(currentPosition);
-          let [position, phrase, bar, beat, tick] = currentPosition;
-          const tickOverflow = tick === 23 ? 1 : 0;
-          tick = (tick + 1) % 24;
-          const beatOverflow = beat === 3 && tickOverflow ? 1 : 0;
-          beat = (beat + tickOverflow) % 4;
-          const barOverflow = bar === 3 && beatOverflow ? 1 : 0;
-          bar = (bar + beatOverflow) % 4;
-          phrase += barOverflow;
-          setCurrentPosition([position + 1, phrase, bar, beat, tick]);
-          if (!recordClock) return;
-        } else if (statusByte === 0xfc) {
-          setCurrentPosition([0, 0, 0, 0, 0]);
-          if (!recordClock) return;
-        }
-
-        if (recordClock || (statusByte < 0xf8 && statusByte > 0xfc))
-          setMidiMessages([
-            { data: message, text: messageToText(message) },
-            ...midiMessages,
-          ]);
-      };
+      selectedInput.onmidimessage = onMidiMessage;
     }
     return () => selectedInput && (selectedInput.onmidimessage = null);
   }, [selectedInput, midiMessages, currentPosition]);
@@ -128,8 +139,9 @@ export default memo(function Home() {
         </pre>
       </div>
       <div>
-        
+        <button onClick={generateCSV}>Generate CSV</button>
+        <pre></pre>
       </div>
     </>
   );
-});
+}
