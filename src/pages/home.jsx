@@ -29,41 +29,46 @@ export default function Home() {
     initialiseDevices(setDevices);
   }, []);
 
+  const onMidiMessage = (message) => {
+    const statusByte = message.data[0];
+    console.log("message", statusByte === 0xf8);
+    if (statusByte === 0xf8) {
+      console.log(currentPosition);
+      let [position, phrase, bar, beat, tick] = currentPosition;
+      const tickOverflow = tick === 23 ? 1 : 0;
+      tick = (tick + 1) % 24;
+      const beatOverflow = beat === 3 && tickOverflow ? 1 : 0;
+      beat = (beat + tickOverflow) % 4;
+      const barOverflow = bar === 3 && beatOverflow ? 1 : 0;
+      bar = (bar + beatOverflow) % 4;
+      phrase += barOverflow;
+      setCurrentPosition([position + 1, phrase, bar, beat, tick]);
+      if (!recordClock) return;
+    } else if (statusByte === 0xfa) {
+      setCurrentPosition([0, 0, 0, 0, 0]);
+      if (!recordClock) return;
+    }
+
+    if (recordClock || (statusByte < 0xf8 && statusByte > 0xfc))
+      setMidiMessages([
+        { data: message, text: messageToText(message) },
+        ...midiMessages,
+      ]);
+  };
+
   const previousSelectedInput = useRef();
   useEffect(() => {
     if (previousSelectedInput.current !== selectedInput) {
-      previousSelectedInput.onmidimessage = () => {};
+      delete previousSelectedInput.onmidimessage;
       previousSelectedInput.current = selectedInput;
       console.log("trying to clear handler");
 
       if (selectedInput) {
-        selectedInput.onmidimessage = (e) => {
-          const statusByte = e.data[0];
-          if (statusByte === 0xf8) {
-            let [position, phrase, bar, beat, tick] = currentPosition;
-            const tickOverflow = tick === 23 ? 1 : 0;
-            tick = (tick + 1) % 24;
-            const beatOverflow = beat === 3 && tickOverflow ? 1 : 0;
-            beat = (beat + tickOverflow) % 4;
-            const barOverflow = bar === 3 && beatOverflow ? 1 : 0;
-            bar = (bar + beatOverflow) % 4;
-            phrase += barOverflow;
-            setCurrentPosition([position + 1, phrase, bar, beat, tick]);
-            if (!recordClock) return;
-          } else if (statusByte === 0xfa) {
-            setCurrentPosition([0, 0, 0, 0, 0]);
-            if (!recordClock) return;
-          }
-
-          if (recordClock || (statusByte < 0xf8 && statusByte > 0xfc))
-            setMidiMessages([
-              { data: e, text: messageToText(e) },
-              ...midiMessages,
-            ]);
-        };
+        console.log("connecting");
+        selectedInput.onmidimessage = onMidiMessage
       }
     }
-  }, [selectedInput, previousSelectedInput, midiMessages, currentPosition]);
+  }, [selectedInput, previousSelectedInput]);
 
   return (
     <>
@@ -80,9 +85,7 @@ export default function Home() {
               )
             }
           >
-            <option>
-              No device selected
-            </option>
+            <option>No device selected</option>
             {devices.inputs.map((input) => (
               <option key={input.id} value={input.id}>
                 {input.name}
@@ -101,9 +104,7 @@ export default function Home() {
               )
             }
           >
-            <option disabled>
-              No device selected
-            </option>
+            <option disabled>No device selected</option>
             {devices.outputs.map((output) => (
               <option key={output.id} value={output.id}>
                 {output.name}
