@@ -20,7 +20,7 @@ export default memo(function Home() {
   const [midiMessages, _setMidiMessages] = useState([]);
   const [currentPosition, _setCurrentPosition] = useState([0, 0, 0, 0, 0]);
   const [devices, setDevices] = useState({ inputs: [], outputs: [] });
-  const [selectedInput, setSelectedInput] = useState();
+  const [selectedInput, _setSelectedInput] = useState(null);
   const [selectedOutput, setSelectedOutput] = useState();
   const [inputListener, setInputListener] = useState();
   const [recordClock, setRecordClock] = useState(false);
@@ -74,19 +74,23 @@ export default memo(function Home() {
     selectedInputRef.current = input;
     _setSelectedInput(input);
   };
+
   useEffect(() => {
-    console.log("use");
+    console.log("use", selectedInput);
     if (previousSelectedInput.current !== selectedInput) {
-      delete previousSelectedInput.onmidimessage;
-      previousSelectedInput.current = selectedInput;
       console.log("trying to clear handler");
+//      if (selectedInput) delete selectedInput.onmidimessage;
+      if (selectedInput) selectedInput.removeEventListenere(onMidiMessage);
+//      if (previousSelectedInput.current) delete previousSelectedInput.onmidimessage;
+      if (previousSelectedInput.current) previousSelectedInput. = () => {};
+      previousSelectedInput.current = selectedInput;
 
       if (selectedInput) {
         console.log("connecting");
         selectedInput.onmidimessage = onMidiMessage;
       }
     }
-  }, [selectedInput, onMidiMessage]);
+  }, [selectedInput]);
 
   return (
     <>
@@ -98,9 +102,8 @@ export default memo(function Home() {
           <select
             disabled={devices.inputs.length === 0}
             onChange={(e) => {
-              console.log("e");
               setSelectedInput(
-                devices.inputs.find(({ id }) => (id = e.target.value))
+                devices.inputs.find(({ id }) => id === e.target.value)
               );
             }}
           >
@@ -118,9 +121,8 @@ export default memo(function Home() {
           <select
             disabled={devices.outputs.length === 0}
             onChange={(e) => {
-              console.log("e");
               setSelectedOutput(
-                devices.outputs.find(({ id }) => (id = e.target.value))
+                devices.outputs.find(({ id }) => id === e.target.value)
               );
             }}
           >
