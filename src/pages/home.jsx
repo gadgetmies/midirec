@@ -57,10 +57,24 @@ export default function Home() {
   };
 
   const generateCSV = () => {
-    console.log(midiMessages);
     const csv = midiMessages
-      .reduce((acc, { data }) => {[...acc, data.toString]}, {inputs: [], messages: []})
-      .join("\n");
+      .reduce(
+        ({ columns, rows }, { data }) => {
+          let column = columns.findIndex(c => c === data[0]);
+          if (column === -1) {
+            column = columns.length;
+            columns.push(data[0]);
+          }
+          console.log({columns})
+          return {
+            columns: columns,
+            rows: [...rows, ",".repeat(column) + data.toString],
+          };
+        },
+        { columns: [], rows: [] }
+      )
+      .rows.join("\n");
+
     setCsv(csv);
   };
 
