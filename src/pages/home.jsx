@@ -52,8 +52,16 @@ export default function Home() {
       selectedInput.onmidimessage = (e) => {
         setMidiMessages([{data: e, text: messageToText(e)}, ...midiMessages]);
         if (event.data[0] === 0xf8) {
-          const [ticks] = currentPosition;
-          setCurrentPosition([ticks + 1, ticks >> 4, ticks >> 8, ticks >> 10]);
+          const [position, phrase, bar, beat, tick] = currentPosition
+          const tickOverflow = position % 24 === 1 ? 1 : 0
+          tick = (tick + 1) % 24
+          const beatOverflow = beat === 3 && tickOverflow ? 1 : 0
+          beat = (beat + tickOverflow) % 4
+          const barOverflow = bar === 3 && beatOverflow ? 1 : 0
+          bar = (bar + beatOverflow) % 4
+          phrase += barOverflow
+          return [phrase, bar, beat, tick]
+          setCurrentPosition([position + 1, ticks >> 16, ticks >> 8, ticks >> 4, ticks]);
         } else if (event.data[0] === 0xfc) {
           setCurrentPosition([0, 0, 0, 0, 0]);
         }
@@ -111,7 +119,7 @@ export default function Home() {
         <button onClick={() => initialiseDevices()}>Refresh devices</button>
       </div>
       <div>
-        Position: {currentPosition[1]}.{currentPosition[2]}.{currentPosition[3]}{" "}
+        Position: {currentPosition[1]}.{currentPosition[2]}.{currentPosition[3]}.{currentPosition[4]}{" "}
         ({currentPosition[0]})
       </div>
       <div>
