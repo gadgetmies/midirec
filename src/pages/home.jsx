@@ -2,12 +2,12 @@ import React, { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import midi from "../midi";
 
-const messageToText = message => `${message.timeStamp}: [${
-              message.data.length
-            } bytes]: ${Array.from(message.data)
-              .map((d) => "0x" + d.toString(16))
-              .join(" ")}\n`;
-
+const messageToText = (message) =>
+  `${message.timeStamp}: [${message.data.length} bytes]: ${Array.from(
+    message.data
+  )
+    .map((d) => "0x" + d.toString(16))
+    .join(" ")}\n`;
 
 const initialiseDevices = async (setDevices) => {
   console.log("initialising");
@@ -50,18 +50,17 @@ export default function Home() {
     }
     if (selectedInput) {
       selectedInput.onmidimessage = (e) => {
-        setMidiMessages([{data: e, text: messageToText(e)}, ...midiMessages]);
+        setMidiMessages([{ data: e, text: messageToText(e) }, ...midiMessages]);
         if (event.data[0] === 0xf8) {
-          const [position, phrase, bar, beat, tick] = currentPosition
-          const tickOverflow = position % 24 === 1 ? 1 : 0
-          tick = (tick + 1) % 24
-          const beatOverflow = beat === 3 && tickOverflow ? 1 : 0
-          beat = (beat + tickOverflow) % 4
-          const barOverflow = bar === 3 && beatOverflow ? 1 : 0
-          bar = (bar + beatOverflow) % 4
-          phrase += barOverflow
-          return [phrase, bar, beat, tick]
-          setCurrentPosition([position + 1, ticks >> 16, ticks >> 8, ticks >> 4, ticks]);
+          let [position, phrase, bar, beat, tick] = currentPosition;
+          const tickOverflow = tick === 11 ? 1 : 0;
+          tick = (tick + 1) % 12;
+          const beatOverflow = beat === 3 && tickOverflow ? 1 : 0;
+          beat = (beat + tickOverflow) % 4;
+          const barOverflow = bar === 3 && beatOverflow ? 1 : 0;
+          bar = (bar + beatOverflow) % 4;
+          phrase += barOverflow;
+          setCurrentPosition([position + 1, phrase, bar, beat, tick]);
         } else if (event.data[0] === 0xfc) {
           setCurrentPosition([0, 0, 0, 0, 0]);
         }
@@ -116,16 +115,21 @@ export default function Home() {
           </select>
         </label>
         <br />
-        <button onClick={() => initialiseDevices()}>Refresh devices</button>
+        <button onClick={() => initialiseDevices(setDevices)}>
+          Refresh devices
+        </button>
       </div>
       <div>
-        Position: {currentPosition[1]}.{currentPosition[2]}.{currentPosition[3]}.{currentPosition[4]}{" "}
-        ({currentPosition[0]})
+        Position: {currentPosition[1]+1}.{currentPosition[2]+1}.{currentPosition[3]+1}
+        .{currentPosition[4]} ({currentPosition[0]})
+      </div>
+      <div>
+        <label><input type="checkbox"></input></label>
       </div>
       <div>
         <button onClick={() => setMidiMessages([])}>Clear messages</button>
         <pre className="midi-messages">
-          {midiMessages.slice(0, 20).map(({text}) => text)}
+          {midiMessages.slice(0, 20).map(({ text }) => text)}
         </pre>
       </div>
     </>
