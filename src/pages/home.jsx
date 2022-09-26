@@ -80,9 +80,9 @@ export default memo(function Home() {
     if (previousSelectedInput.current !== selectedInput) {
       console.log("trying to clear handler");
 //      if (selectedInput) delete selectedInput.onmidimessage;
-      if (selectedInput) selectedInput.removeEventListenere(onMidiMessage);
+      if (selectedInput) selectedInput.removeEventListener('onmidimessage',onMidiMessage);
 //      if (previousSelectedInput.current) delete previousSelectedInput.onmidimessage;
-      if (previousSelectedInput.current) previousSelectedInput. = () => {};
+      if (previousSelectedInput.current) previousSelectedInput.current.removeEventListener('onmidimessage', onMidiMessage)
       previousSelectedInput.current = selectedInput;
 
       if (selectedInput) {
