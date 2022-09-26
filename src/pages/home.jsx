@@ -20,7 +20,7 @@ export default memo(function Home() {
   const [midiMessages, _setMidiMessages] = useState([]);
   const [currentPosition, _setCurrentPosition] = useState([0, 0, 0, 0, 0]);
   const [devices, setDevices] = useState({ inputs: [], outputs: [] });
-  const [selectedInput, _setSelectedInput] = useState(null);
+  const [selectedInput, setSelectedInput] = useState(null);
   const [selectedOutput, setSelectedOutput] = useState();
   const [inputListener, setInputListener] = useState();
   const [recordClock, setRecordClock] = useState(false);
@@ -43,7 +43,6 @@ export default memo(function Home() {
 
   const onMidiMessage = (message) => {
     const statusByte = message.data[0];
-    console.log("message", statusByte === 0xf8);
     if (statusByte === 0xf8) {
       console.log(currentPosition);
       let [position, phrase, bar, beat, tick] = currentPosition;
@@ -56,7 +55,7 @@ export default memo(function Home() {
       phrase += barOverflow;
       setCurrentPosition([position + 1, phrase, bar, beat, tick]);
       if (!recordClock) return;
-    } else if (statusByte === 0xfa) {
+    } else if (statusByte === 0xfb) {
       setCurrentPosition([0, 0, 0, 0, 0]);
       if (!recordClock) return;
     }
@@ -68,28 +67,11 @@ export default memo(function Home() {
       ]);
   };
 
-  const previousSelectedInput = useRef();
-  const selectedInputRef = useRef(selectedInput);
-  const setSelectedInput = (input) => {
-    selectedInputRef.current = input;
-    _setSelectedInput(input);
-  };
-
   useEffect(() => {
-    console.log("use", selectedInput);
-    if (previousSelectedInput.current !== selectedInput) {
-      console.log("trying to clear handler");
-//      if (selectedInput) delete selectedInput.onmidimessage;
-      if (selectedInput) selectedInput.removeEventListener('onmidimessage',onMidiMessage);
-//      if (previousSelectedInput.current) delete previousSelectedInput.onmidimessage;
-      if (previousSelectedInput.current) previousSelectedInput.current.removeEventListener('onmidimessage', onMidiMessage)
-      previousSelectedInput.current = selectedInput;
-
-      if (selectedInput) {
-        console.log("connecting");
-        selectedInput.onmidimessage = onMidiMessage;
-      }
+    if (selectedInput) {
+      selectedInput.onmidimessage = onMidiMessage;
     }
+    return () => selectedInput && (selectedInput.onmidimessage = null);
   }, [selectedInput]);
 
   return (
