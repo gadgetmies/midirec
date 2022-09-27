@@ -20,7 +20,8 @@ export default function Home() {
   const [midiMessages, setMidiMessages] = useState([]);
   const [currentPosition, setCurrentPosition] = useState([0, 0, 0, 0, 0]);
   const [devices, setDevices] = useState({ inputs: [], outputs: [] });
-  const [selectedInput, setSelectedInput] = useState(null);
+  const [selectedRecordingInput, setSelectedRecordingInput] = useState(null);
+  const [selectedControlInput, setSelectedControlInput] = useState(null);
   const [selectedOutput, setSelectedOutput] = useState();
   const [inputListener, setInputListener] = useState();
   const [recordClock, setRecordClock] = useState(false);
@@ -33,6 +34,7 @@ export default function Home() {
 
   const onMidiMessage = useCallback(
     (message) => {
+      if (!isRecording) return
       const statusByte = message.data[0];
       if (statusByte === 0xf8) {
         let [position, phrase, bar, beat, tick] = currentPosition;
@@ -61,7 +63,7 @@ export default function Home() {
           ...midiMessages,
         ]);
     },
-    [midiMessages, currentPosition]
+    [midiMessages, currentPosition, isRecording]
   );
 
   const downloadCSV = useCallback(() => {
@@ -97,11 +99,11 @@ ${rows.join("\n")}`;
   }, [setCsv, midiMessages]);
 
   useEffect(() => {
-    if (selectedInput) {
-      selectedInput.onmidimessage = onMidiMessage;
+    if (selectedRecordingInput) {
+      selectedRecordingInput.onmidimessage = onMidiMessage;
     }
-    return () => selectedInput && (selectedInput.onmidimessage = null);
-  }, [selectedInput, midiMessages, currentPosition]);
+    return () => selectedRecordingInput && (selectedRecordingInput.onmidimessage = null);
+  }, [selectedRecordingInput, midiMessages, currentPosition, isRecording]);
 
   const resetPosition = useCallback(() => {
     setCurrentPosition([0, 0, 0, 0, 0]);
@@ -113,14 +115,35 @@ ${rows.join("\n")}`;
       {/* When the user hovers over the image we apply the wiggle style to it */}
       <div className="instructions">
         <label>
-          Input:
+          Input to record:<br/>
           <select
             disabled={devices.inputs.length === 0}
             onChange={(e) => {
-              setSelectedInput(
+              setSelectedRecordingInput(
                 devices.inputs.find(({ id }) => id === e.target.value)
               );
             }}
+            value={selectedRecordingInput?.id}
+          >
+            <option>No device selected</option>
+            {devices.inputs.map((input) => (
+              <option key={input.id} value={input.id}>
+                {input.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <br/>
+        <label>
+          Control input:<br/>
+          <select
+            disabled={devices.inputs.length === 0}
+            onChange={(e) => {
+              setSelectedControlInput(
+                devices.inputs.find(({ id }) => id === e.target.value)
+              );
+            }}
+            value={selectedControlInput?.id}
           >
             <option>No device selected</option>
             {devices.inputs.map((input) => (
@@ -132,7 +155,7 @@ ${rows.join("\n")}`;
         </label>
         <br />
         <label>
-          Output:
+          Output:<br/>
           <select
             disabled={devices.outputs.length === 0}
             onChange={(e) => {
@@ -159,7 +182,7 @@ ${rows.join("\n")}`;
         {currentPosition[3] + 1}.{currentPosition[4]} ({currentPosition[0]})
       </div>
       <div>
-        <button onClick={resetPosition} disabled={selectedInput}>Reset position</button>
+        <button onClick={resetPosition} disabled={!selectedRecordingInput}>Reset position</button>
       </div>
       <h2>Recording</h2>
       <button onClick={() => setRecording(!isRecording)}>{isRecording ? 'Pause' : 'Resume'}</button>
