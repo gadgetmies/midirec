@@ -25,6 +25,7 @@ export default function Home() {
   const [inputListener, setInputListener] = useState();
   const [recordClock, setRecordClock] = useState(false);
   const [csv, setCsv] = useState("");
+  const [downloadUrl, setDownloadUrl] = useState();
 
   useEffect(() => {
     initialiseDevices(setDevices);
@@ -62,7 +63,7 @@ export default function Home() {
     [midiMessages, currentPosition]
   );
 
-  const generateCSV = useCallback(() => {
+  const downloadCSV = useCallback(() => {
     const csv = midiMessages
       .reduce(
         ({ columns, rows }, { data, position }) => {
@@ -80,7 +81,13 @@ export default function Home() {
       )
       .rows.join("\n");
 
-    setCsv(csv);
+    const blob = new Blob([csv]);
+    const fileDownloadUrl = URL.createObjectURL(blob);
+    
+    const link = document.createElement("a")
+    link.
+    
+    URL.revokeObjectURL(fileDownloadUrl);  // free up storage--no longer needed.
   }, [setCsv, midiMessages]);
 
   useEffect(() => {
@@ -161,10 +168,10 @@ export default function Home() {
       </div>
       <div>
         <h3>
-          Recorded messages{" "}
-          <button onClick={() => setMidiMessages([])}>Clear recording</button>{" "}
-          <button onClick={generateCSV}>Download CSV</button>
+          Recorded messages ({midiMessages?.length})
         </h3>
+        <button onClick={() => setMidiMessages([])}>Clear recording</button>{" "}
+        <button onClick={downloadCSV}>Download CSV</button>
         <pre className="midi-messages">
           {midiMessages.slice(0, 20).map(({ text }) => text)}
         </pre>
