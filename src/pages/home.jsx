@@ -81,7 +81,8 @@ export default function Home() {
         { columns: [], rows: [] }
       )
       
-
+    const csv = `ticks,position,${columns.join(',')}
+${rows.join("\n")}`;
     
     const blob = new Blob([csv]);
     const fileDownloadUrl = URL.createObjectURL(blob);
