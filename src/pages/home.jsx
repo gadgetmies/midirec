@@ -30,9 +30,8 @@ export default function Home() {
     initialiseDevices(setDevices);
   }, []);
 
-  const onMidiMessage = (message) => {
+  const onMidiMessage = useCallback((message) => {
     const statusByte = message.data[0];
-    console.log(statusByte);
     if (statusByte === 0xf8) {
       let [position, phrase, bar, beat, tick] = currentPosition;
       const tickOverflow = tick === 23 ? 1 : 0;
@@ -58,9 +57,9 @@ export default function Home() {
         },
         ...midiMessages,
       ]);
-  };
+  }, [midiMessages, currentPosition]);
 
-  const generateCSV = () => {
+  const generateCSV = useCallback(() => {
     const csv = midiMessages
       .reduce(
         ({ columns, rows }, { data, position }) => {
@@ -79,7 +78,7 @@ export default function Home() {
       .rows.join("\n");
 
     setCsv(csv);
-  };
+  }, [setCsv, midiMessages]);
 
   useEffect(() => {
     if (selectedInput) {
