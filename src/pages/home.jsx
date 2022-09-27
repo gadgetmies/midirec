@@ -30,34 +30,37 @@ export default function Home() {
     initialiseDevices(setDevices);
   }, []);
 
-  const onMidiMessage = useCallback((message) => {
-    const statusByte = message.data[0];
-    if (statusByte === 0xf8) {
-      let [position, phrase, bar, beat, tick] = currentPosition;
-      const tickOverflow = tick === 23 ? 1 : 0;
-      tick = (tick + 1) % 24;
-      const beatOverflow = beat === 3 && tickOverflow ? 1 : 0;
-      beat = (beat + tickOverflow) % 4;
-      const barOverflow = bar === 3 && beatOverflow ? 1 : 0;
-      bar = (bar + beatOverflow) % 4;
-      phrase += barOverflow;
-      setCurrentPosition([position + 1, phrase, bar, beat, tick]);
-      if (!recordClock) return;
-    } else if (statusByte === 0xfc) {
-      setCurrentPosition([0, 0, 0, 0, 0]);
-      if (!recordClock) return;
-    }
+  const onMidiMessage = useCallback(
+    (message) => {
+      const statusByte = message.data[0];
+      if (statusByte === 0xf8) {
+        let [position, phrase, bar, beat, tick] = currentPosition;
+        const tickOverflow = tick === 23 ? 1 : 0;
+        tick = (tick + 1) % 24;
+        const beatOverflow = beat === 3 && tickOverflow ? 1 : 0;
+        beat = (beat + tickOverflow) % 4;
+        const barOverflow = bar === 3 && beatOverflow ? 1 : 0;
+        bar = (bar + beatOverflow) % 4;
+        phrase += barOverflow;
+        setCurrentPosition([position + 1, phrase, bar, beat, tick]);
+        if (!recordClock) return;
+      } else if (statusByte === 0xfc) {
+        setCurrentPosition([0, 0, 0, 0, 0]);
+        if (!recordClock) return;
+      }
 
-    if (recordClock || statusByte < 0xf8 || statusByte > 0xfc)
-      setMidiMessages([
-        {
-          data: message,
-          text: messageToText(message),
-          position: currentPosition.slice(1).join("."),
-        },
-        ...midiMessages,
-      ]);
-  }, [midiMessages, currentPosition]);
+      if (recordClock || statusByte < 0xf8 || statusByte > 0xfc)
+        setMidiMessages([
+          {
+            data: message,
+            text: messageToText(message),
+            position: currentPosition.slice(1).join("."),
+          },
+          ...midiMessages,
+        ]);
+    },
+    [midiMessages, currentPosition]
+  );
 
   const generateCSV = useCallback(() => {
     const csv = midiMessages
@@ -70,7 +73,7 @@ export default function Home() {
           }
           return {
             columns: columns,
-            rows: [...rows, position + ",".repeat(column+1) + data.data[2]],
+            rows: [...rows, position + ",".repeat(column + 1) + data.data[2]],
           };
         },
         { columns: [], rows: [] }
@@ -86,6 +89,10 @@ export default function Home() {
     }
     return () => selectedInput && (selectedInput.onmidimessage = null);
   }, [selectedInput, midiMessages, currentPosition]);
+
+  const resetPosition = useCallback(() => {
+    setCurrentPosition([0, 0, 0, 0, 0]);
+  }, [setCurrentPosition]);
 
   return (
     <>
@@ -139,6 +146,10 @@ export default function Home() {
         {currentPosition[3] + 1}.{currentPosition[4]} ({currentPosition[0]})
       </div>
       <div>
+        <button onClick={resetPosition}>Reset position</button>
+      </div>
+      <h2>Recording</h2>
+      <div>
         <label>
           <input
             type="checkbox"
@@ -149,14 +160,14 @@ export default function Home() {
         </label>
       </div>
       <div>
-        <button onClick={() => setMidiMessages([])}>Clear messages</button>
+        <h3>
+          Recorded messages{" "}
+          <button onClick={() => setMidiMessages([])}>Clear recording</button>{" "}
+          <button onClick={generateCSV}>Download CSV</button>
+        </h3>
         <pre className="midi-messages">
           {midiMessages.slice(0, 20).map(({ text }) => text)}
         </pre>
-      </div>
-      <div>
-        <button onClick={generateCSV}>Generate CSV</button>
-        <pre>{csv}</pre>
       </div>
     </>
   );
