@@ -25,7 +25,7 @@ export default function Home() {
   const [inputListener, setInputListener] = useState();
   const [recordClock, setRecordClock] = useState(false);
   const [csv, setCsv] = useState("");
-  const [downloadUrl, setDownloadUrl] = useState();
+  const [isRecording, setRecording] = useState(true);
 
   useEffect(() => {
     initialiseDevices(setDevices);
@@ -159,9 +159,10 @@ ${rows.join("\n")}`;
         {currentPosition[3] + 1}.{currentPosition[4]} ({currentPosition[0]})
       </div>
       <div>
-        <button onClick={resetPosition}>Reset position</button>
+        <button onClick={resetPosition} disabled={selectedInput}>Reset position</button>
       </div>
       <h2>Recording</h2>
+      <button onClick={() => setRecording(!isRecording)}>{isRecording ? 'Pause' : 'Resume'}</button>
       <div>
         <label>
           <input
