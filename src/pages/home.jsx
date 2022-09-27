@@ -55,6 +55,7 @@ export default function Home() {
           {
             data: message,
             text: messageToText(message),
+            ticks: currentPosition[0],
             position: currentPosition.slice(1).join("."),
           },
           ...midiMessages,
@@ -64,9 +65,9 @@ export default function Home() {
   );
 
   const downloadCSV = useCallback(() => {
-    const csv = midiMessages
+    const {columns, rows} = midiMessages
       .reduce(
-        ({ columns, rows }, { data, position }) => {
+        ({ columns, rows }, { data, position, ticks }) => {
           let column = columns.findIndex((c) => c === data.data[1]);
           if (column === -1) {
             column = columns.length;
@@ -74,19 +75,23 @@ export default function Home() {
           }
           return {
             columns: columns,
-            rows: [...rows, position + ",".repeat(column + 1) + data.data[2]],
+            rows: [...rows, `${ticks},${position}${",".repeat(column + 1)}${data.data[2]}`],
           };
         },
         { columns: [], rows: [] }
       )
-      .rows.join("\n");
+      
 
+    
     const blob = new Blob([csv]);
     const fileDownloadUrl = URL.createObjectURL(blob);
     
     const link = document.createElement("a")
-    link.
-    
+    link.setAttribute('href', fileDownloadUrl)
+    link.setAttribute('download', 'recording.csv')
+    document.querySelector('body').append(link)
+    link.click()
+    console.log('click')
     URL.revokeObjectURL(fileDownloadUrl);  // free up storage--no longer needed.
   }, [setCsv, midiMessages]);
 
