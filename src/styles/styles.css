@@ -74,7 +74,7 @@ h2 {
 }
 
 .midi-messages {
-  height: 500px;
+  height: 20rem;
   overflow-y: auto;
   border: 1px solid blue;
   border-radius: 5px;
